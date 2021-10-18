@@ -74,7 +74,7 @@ router.post('/register', async (req, res) => {
         var html1 = await fs.readFileSync(path.join(htmlPath, 'confirm-email-1.html').replace(/\\/g, '\\'));
         var html2 = await fs.readFileSync(path.join(htmlPath, 'confirm-email-2.html').replace(/\\/g, '\\'));
         var html3 = await fs.readFileSync(path.join(htmlPath, 'confirm-email-3.html').replace(/\\/g, '\\'));
-        const url = `http://localhost:3000/register?role=tutor&token=${emailToken}&user=${tutor.username}`;
+        const url = `http://${process.env.DNS}/register?role=tutor&token=${emailToken}&user=${tutor.username}`;
         transporter.sendMail({
             to : tutor.email,
             subject : "Confirm your Email",
