@@ -44,3 +44,12 @@ app.use('/user', userRoute);
 app.use('/student', studentRoute);
 app.use('/tutor', tutorRoute);
 app.use('/course', courseRoute);
+app.use(express.static(path.join(__dirname, "build")));
+
+app.use((req, res, next) => {
+    res.sendFile(path.join(__dirname, 'build/index.html'), (err) => {
+        if(err){
+            res.status(500).send(err);
+        }
+    })
+})
