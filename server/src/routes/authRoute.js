@@ -6,6 +6,7 @@ const Tutor = require('../models/Tutor');
 const bcrypt = require('bcryptjs');
 const { loginValidation } = require('../validation/validation');
 const { generateAccessToken, generateRefreshToken, setTokenCookie, refreshToken, revokeToken, authorize } = require('../services/auth');
+const { verify } = require('./verifyToken');
 
 router.post('/login', async (req, res) => {
     // cheks if the login request is valid
@@ -50,7 +51,7 @@ router.post('/login', async (req, res) => {
     res.json({success: true, message: 'Login successful', ref: user, accessToken : {token: accessToken, expiry: '15m'}});
 })
 
-router.post('/refreshToken', async (req, res) => {
+router.post('/refreshToken', verify, async (req, res) => {
     const token = req.cookies.refreshToken;
     if (!token) return res.status(400).json({success: false, message: 'Token is required'});
 
@@ -66,7 +67,7 @@ router.post('/refreshToken', async (req, res) => {
     })
 })
 
-router.post('/revokeToken', authorize(), async (req, res) => {
+router.post('/revokeToken', verify, authorize(), async (req, res) => {
     // Accept token from request body or cookie
     const token = req.body.token || req.cookies.refreshToken;
     const ipAddress = req.ip;

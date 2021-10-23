@@ -53,6 +53,11 @@ const refreshToken = async (token, ipAddress) => {
     }
     else user.role = 'student';
 
+    // delete the user's password hash from the reference object
+    user.password = undefined;
+    // delete the confirmed flag from the reference object
+    user.confirmed = undefined;
+
     // Replace the old refresh token with a new one.
     const newRefreshToken = generateRefreshToken(refreshToken.user, ipAddress);
     refreshToken.revokedAt = Date.now();
