@@ -205,13 +205,13 @@ router.get('/courses/all', verifyTutor, async (req, res) => {
 
 // email confirmation
 router.get('/confirmation/:token', async(req, res) => {
-    if(!req.params.token) return res.status(424).send({success: false, message: 'E-mail verification unsucessful'});
+    if(!req.params.token) return res.status(400).send({success: false, message: 'E-mail verification unsucessful'});
     try {
         const tutor =  jwt.verify(req.params.token, process.env.TOKEN_SECRET);
         const id = tutor._id;
         const role = student.role;
 
-        if (role !="tutor") return res.send({success: false, message: 'E-mail verification unsucessful'});
+        if (role !="tutor") return res.status(401).send({success: false, message: 'E-mail verification unsucessful'});
         
         await Tutor.findByIdAndUpdate(id, {
             $set : {
@@ -220,7 +220,7 @@ router.get('/confirmation/:token', async(req, res) => {
         })
     }
     catch (e) {
-        return res.send({success: false, message: 'E-mail verification unsucessful'});
+        return res.status(400).send({success: false, message: 'E-mail verification unsucessful'});
     }
     return res.status(201).send({success: true, message: 'E-mail verified'});
 });
