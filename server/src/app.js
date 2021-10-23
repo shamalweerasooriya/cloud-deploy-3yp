@@ -22,6 +22,7 @@ const userRoute = require('./routes/userRoute');
 const studentRoute = require('./routes/studentRoute');
 const tutorRoute = require('./routes/tutorRoute');
 const courseRoute = require('./routes/courseRoute');
+const classRoute = require('./routes/classRoute');
 
 // TODO: Remove as a global variable. Put separate variables for each room.
 var raisedUsers = {};
@@ -47,7 +48,6 @@ io.on('connection', (socket) => {
         if (raiseHand) raisedUsers[`${name}`] = name;
         else delete raisedUsers[`${name}`];
         io.to(user.room).emit('raiseHandBroadCast', raisedUsers);
-        //   console.log(name, raiseHand)
     })
 
     socket.on('sendMessage', (message, callback) => {
@@ -79,6 +79,7 @@ app.use('/user', userRoute);
 app.use('/student', studentRoute);
 app.use('/tutor', tutorRoute);
 app.use('/course', courseRoute);
+app.use('/class', classRoute);
 app.use(express.static(path.join(__dirname, "build")));
 app.use((req, res, next) => {
     res.sendFile(path.join(__dirname, 'build/index.html'), (err) => {

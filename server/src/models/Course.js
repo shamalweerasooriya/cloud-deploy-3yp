@@ -11,7 +11,7 @@ const courseSchema = new Schema({
     description : {
         type : String,
         required : true,
-        max : 4096,
+        max : 32768,
         min : 3
     },
     difficulty : {
@@ -23,25 +23,9 @@ const courseSchema = new Schema({
         type : String,
         required : false
     },
-    noOfStudents : {
-        type : Number,
-        required : true
-    },
     searchTags : {
         type : [String],
         default : []
-    },
-    lessons : {
-        type : [String],
-        required : true
-    },
-    requirements : {
-        type : [String],
-        required : true
-    },
-    amount : {
-        type : Number,
-        default : 0
     },
     dateCreated : {
         type : Date,
@@ -76,10 +60,6 @@ const courseSchema = new Schema({
         type : String,
         default : 'default:0'
     },
-    category : {
-        type : String,
-        required : true
-    },
     searchTags : [{
         type : String,
     }],
@@ -92,8 +72,12 @@ const courseSchema = new Schema({
     },
     enrollees : [{
         type : mongoose.Schema.Types.ObjectId,
-        ref : 'Tutor'
+        ref : 'Student'
     }],
+    classRooms : [{
+        type : mongoose.Schema.Types.ObjectId,
+        ref : 'ClassRoom'
+    }]
 })
 
 module.exports = mongoose.model('Course', courseSchema);

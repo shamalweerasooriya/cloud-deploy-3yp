@@ -15,7 +15,7 @@ router.post('/login', async (req, res) => {
     // checks if the user exists
     var criteria = (req.body.login.indexOf('@') === -1) ? {username: req.body.login} : {email: req.body.login};
     var user = await User.findOne(criteria);
-    if (!user) return res.status(400).json({success: false, message: 'Username or Email not found'});
+    if (!user) return res.status(401).json({success: false, message: 'Invalid login or password'});
 
     const role = user.role;
 
@@ -34,10 +34,12 @@ router.post('/login', async (req, res) => {
 
     // checks whether the password is correct
     const validPW = await bcrypt.compare(req.body.password, user.password);
-    if (!validPW) res.status(400).json({success: false, message: 'Invalid password'});
+    if (!validPW) return res.status(401).json({success: false, message: 'Invalid login or password'});
 
     // delete the user's password hash from the reference object
     user.password = undefined;
+    // delete the confirmed flag from the reference object
+    user.confirmed = undefined;
 
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user, req.ip);

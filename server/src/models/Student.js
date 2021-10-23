@@ -70,6 +70,11 @@ const studentSchema = new Schema({
         ref : 'Course',
         default : []
     }],
+    subscribedClasses : [{
+        type : Schema.Types.ObjectId,
+        ref : 'ClassRoom',
+        default : []
+    }],
 });
 
 studentSchema.set('toJSON', {

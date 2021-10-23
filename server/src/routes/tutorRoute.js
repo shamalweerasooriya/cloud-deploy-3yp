@@ -68,7 +68,7 @@ router.post('/register', async (req, res) => {
         await tutor.save();
 
         // ***** email confirmation should be sent here *****
-        const emailToken = await jwt.sign({_id : tutor._id}, process.env.TOKEN_SECRET, {expiresIn : '1d'});
+        const emailToken = await jwt.sign({_id : tutor._id, role : "tutor"}, process.env.TOKEN_SECRET, {expiresIn : '1d'});
 
         // html data
         const htmlPath = path.join(__dirname, process.env.EMAIL_PATH);
@@ -122,7 +122,17 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({storage: storage});
+const upload = multer({
+    storage: storage,
+    // limits: { fileSize: 1000000 },
+    fileFilter: function (req, file, cb) {
+        fs.readdir(uploadPath, (err, files) => {
+            files.forEach(_file => {
+                return _file.split('_')[3] === file.originalname ? cb(null, false) : cb(null, true);
+            });
+        });
+    }
+});
 
 router.post('/avatar/:id', upload.single('avatar-upload'), verifyTutor, async (req, res) => {
     try {
@@ -199,7 +209,10 @@ router.get('/confirmation/:token', async(req, res) => {
     try {
         const tutor =  jwt.verify(req.params.token, process.env.TOKEN_SECRET);
         const id = tutor._id;
-        console.log(id);
+        const role = student.role;
+
+        if (role !="tutor") return res.send({success: false, message: 'E-mail verification unsucessful'});
+        
         await Tutor.findByIdAndUpdate(id, {
             $set : {
                 confirmed : "true"
@@ -207,9 +220,58 @@ router.get('/confirmation/:token', async(req, res) => {
         })
     }
     catch (e) {
-        res.send({success: false, message: 'E-mail verification unsucessful'});
+        return res.send({success: false, message: 'E-mail verification unsucessful'});
     }
-    res.status(201).send({success: true, message: 'E-mail verified'});
+    return res.status(201).send({success: true, message: 'E-mail verified'});
 });
+
+// get all the course data of a specific tutor.
+// the data can be requested with pagination.
+// example request: /tutor/courses?page=1&limit=10&sort=latest.
+router.get('/courses', verifyTutor, async (req, res) => {
+    try {
+        const _count = req.query.count;
+        var auth = req.header('Authorization');
+        auth = auth.split(' ');
+
+        const page = parseInt(req.query.page);
+        const limit = parseInt(req.query.limit);
+        let sortBy = { dateCreated: -1 };
+        let filterBy = true;
+
+        if (req.query.sort === 'popular') sortBy = { pointsOfInterest: -1 };
+        else if (req.query.sort == 'best-rated') sortBy = { rating: -1 };
+        else if (req.query.sort == 'alphabetical') sortBy = { title: 1 };
+
+        if (req.query.filter === 'not published') filterBy = false;
+
+        if (page < 1 || limit < 1) return res.status(400).send({success: false, message: 'Invalid Page or Limit'});
+
+        const tutor = await Tutor.findById(auth[2], 'courses');
+    
+        // if page or limit is not provided, return all the data
+        if (!page || !limit) {
+            const courses = await Course.find({ _id: {$in: tutor.courses} });
+            return res.status(200).send({success: true, courses: courses});
+        }
+        // if page or limit is provided, return the data with pagination. alsp send the page number and limit of previous and next page.
+        // example: {next: {page: 2, limit: 10}, previous: {page: 0, limit: 10}, courses: [{}, {}, {}]}
+        else {
+            const courses = await Course.find({ _id: {$in: tutor.courses} , isPublished: filterBy }).skip((page - 1) * limit).limit(limit).sort(sortBy);
+            const count = await Course.countDocuments({ _id: {$in: tutor.courses} , isPublished: filterBy });
+            let next = {page: page + 1, limit: limit};
+            let previous = {page: page - 1, limit: limit};
+            if (courses.length < limit) next = null;
+            else if (count - (page * limit) < limit) next.limit = count - (page * limit);
+            if (page == 1 || (page - 1) * limit > count) previous = null;
+            let result = {success: true, courses: courses, next: next, previous: previous};
+            if (_count) result.count = count;
+            res.status(200).send(result);
+        }
+    }
+    catch (err) {
+        res.status(400).send({success: false, message: err.message});
+    }
+})
 
 module.exports = router;

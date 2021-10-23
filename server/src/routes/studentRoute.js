@@ -6,7 +6,7 @@ const Student = require('../models/Student');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { registerValidation } = require('../validation/validation');
-const { verifyStudent } = require('./verifyToken');
+const { verify, verifyStudent } = require('./verifyToken');
 const nodemailer = require('nodemailer');
 const path = require('path');
 const { resolve } = require('path');
@@ -68,7 +68,7 @@ router.post('/register', async (req, res) => {
         await student.save();
 
         // ***** email confirmation should be sent here *****
-        const emailToken = await jwt.sign({_id : student._id}, process.env.TOKEN_SECRET, {expiresIn : '1d'});
+        const emailToken = await jwt.sign({_id : student._id, role : "student"}, process.env.TOKEN_SECRET, {expiresIn : '1d'});
         
         // html data
         const htmlPath = path.join(__dirname, process.env.EMAIL_PATH);
@@ -98,7 +98,7 @@ router.post('/register', async (req, res) => {
 })
 
 // gest basic info of the student
-router.get('/info/:id/:filename?', verifyStudent, (req, res) => {
+router.get('/info/:id/:filename?', verify, (req, res) => {
     const id = req.params.id;
     // filename is optional. if provided, the avatar file is returned
     const filename = req.params.filename;
@@ -124,7 +124,17 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({storage: storage});
+const upload = multer({
+    storage: storage,
+    // limits: { fileSize: 1000000 },
+    fileFilter: function (req, file, cb) {
+        fs.readdir(uploadPath, (err, files) => {
+            files.forEach(_file => {
+                return _file.split('_')[3] === file.originalname ? cb(null, false) : cb(null, true);
+            });
+        });
+    }
+});
 
 router.post('/avatar/:id', upload.single('avatar-upload'), verifyStudent, async (req, res) => {
     try {
@@ -160,6 +170,9 @@ router.get('/confirmation/:token', async (req, res) => {
     try {
         const student =  jwt.verify(req.params.token, process.env.TOKEN_SECRET);
         const id = student._id;
+        const role = student.role;
+
+        if (role !="student") return res.send({success: false, message: 'E-mail verification unsucessful'});
         
         await Student.findByIdAndUpdate(id, {
             $set : {
@@ -168,9 +181,9 @@ router.get('/confirmation/:token', async (req, res) => {
         })
     }
     catch (e) {
-        res.send({success: false, message: 'E-mail verification unsucessful'});
+        return res.send({success: false, message: 'E-mail verification unsucessful'});
     }
-    res.status(201).send({success: true, message: 'E-mail verified'});
+    return res.status(201).send({success: true, message: 'E-mail verified'});
 });
 
 module.exports = router;

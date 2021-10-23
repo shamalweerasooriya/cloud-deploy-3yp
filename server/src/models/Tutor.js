@@ -93,7 +93,6 @@ tutorSchema.set('toObject', {
     }
 });
 
-// ********** ADD THIS TO REPO BRANCH ***********
 tutorSchema.virtual('numberOfCourses').get(function () {
     return this.courses.length;
 });
