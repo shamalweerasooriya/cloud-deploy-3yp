@@ -6,12 +6,18 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const app =  express();
-const http = require('http');
+// const http = require('http');
+const spdy = require('spdy');
+const fs = require('fs');
 const path = require('path');
+
 const { addUser, removeUser, getUser, getUsersInRoom, getUserByName } = require('./services/users');
 
-// http server creation
-const server = http.createServer(app);
+// http/2 server creation
+const server = spdy.createServer({
+    key: fs.readFileSync(path.join(__dirname, './server.key')),
+    cert: fs.readFileSync(path.join(__dirname, './server.crt')),
+}, app);
 const io = require('socket.io')(server);
 
 dotenv.config();    // configures dotenv
